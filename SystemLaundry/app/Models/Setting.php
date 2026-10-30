@@ -28,8 +28,8 @@ class Setting extends Model
      */
     public const DEFAULTS = [
         'shop_name' => 'Fresh Fold Laundry',
-        'shop_address' => '123 Rizal Street, Barangay Poblacion',
-        'shop_phone' => '09171234567',
+        'shop_address' => 'Canja Street, Barangay Kalawag 1',
+        'shop_phone' => '09525948284',
         'shop_email' => 'hello@freshfold.test',
         'currency_code' => 'PHP',
         'currency_symbol' => '₱',
@@ -43,16 +43,16 @@ class Setting extends Model
 
         // Public website (docs/public-site/02-database.md). Sample values — edit in Settings.
         'shop_tagline' => 'Fresh, clean, and on time.',
-        'shop_city' => 'Quezon City, Metro Manila',
+        'shop_city' => 'Isulan, Sultan Kudarat',
         'business_hours' => 'Mon–Sat 7:00 AM – 8:00 PM · Sun 8:00 AM – 5:00 PM',
         // Same hours in schema.org format for Google (comma-separated).
         'opening_hours_schema' => 'Mo-Sa 07:00-20:00, Su 08:00-17:00',
-        'facebook_url' => 'https://www.facebook.com/freshfoldlaundry',
-        'messenger_url' => 'https://m.me/freshfoldlaundry',
+        'facebook_url' => 'https://www.facebook.com/sheila.may.cabugason',
+        'messenger_url' => 'https://m.me/sheila.may.cabugason',
         'instagram_url' => '',
         // Google Maps "Embed a map" src URL; leave empty to hide the map.
         'map_embed_url' => '',
-        'map_link' => 'https://maps.google.com/?q=Fresh+Fold+Laundry',
+        'map_link' => 'https://maps.google.com/?q=Canja+Street,+Kalawag+1,+Isulan,+Sultan+Kudarat',
         'about_text' => 'Fresh Fold Laundry started as a two-machine shop for busy neighbors who needed clean clothes without losing their weekend. Today we wash, dry, fold and press for students, families and working professionals — with every order tagged, tracked and texted to you, so nothing gets lost and you always know when your laundry is ready.',
         'founded_year' => '2019',
         'service_area' => 'Pickup and delivery within 5 km of the shop',
