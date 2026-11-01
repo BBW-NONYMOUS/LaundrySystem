@@ -63,15 +63,15 @@ class PublicWebsiteTest extends TestCase
             ->where('testimonials.0.comment', 'Visible review')
             ->missing('testimonials.0.customer_id')
             ->has('faqs', 5)
-            ->where('site.name', 'Fresh Fold Laundry')
-            ->where('seo.title', 'Fresh Fold Laundry'));
+            ->where('site.name', 'Metric Laundry Services')
+            ->where('seo.title', 'Metric Laundry Services'));
     }
 
     public function test_seo_tags_and_local_business_schema_are_in_the_raw_html_for_crawlers(): void
     {
         $html = $this->get(route('public.pricing'))->assertOk()->getContent();
 
-        $this->assertStringContainsString('<title data-inertia="">Services &amp; Pricing | Fresh Fold Laundry</title>', $html);
+        $this->assertStringContainsString('<title data-inertia="">Services &amp; Pricing | Metric Laundry Services</title>', $html);
         $this->assertStringContainsString('property="og:title"', $html);
         $this->assertStringContainsString('name="description"', $html);
         $this->assertStringContainsString('data-inertia="description"', $html);
@@ -194,7 +194,7 @@ class PublicWebsiteTest extends TestCase
     {
         $this->get('/this-page-does-not-exist')
             ->assertNotFound()
-            ->assertInertia(fn ($page) => $page->component('errors/error')->where('status', 404)->where('site.name', 'Fresh Fold Laundry'));
+            ->assertInertia(fn ($page) => $page->component('errors/error')->where('status', 404)->where('site.name', 'Metric Laundry Services'));
 
         // JSON callers still get JSON.
         $this->getJson('/this-page-does-not-exist')->assertNotFound()->assertJsonStructure(['message']);

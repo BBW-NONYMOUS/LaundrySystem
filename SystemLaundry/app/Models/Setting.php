@@ -27,7 +27,7 @@ class Setting extends Model
      * @var array<string, string>
      */
     public const DEFAULTS = [
-        'shop_name' => 'Fresh Fold Laundry',
+        'shop_name' => 'Metric Laundry Services',
         'shop_address' => 'Canja Street, Barangay Kalawag 1',
         'shop_phone' => '09525948284',
         'shop_email' => 'hello@freshfold.test',
@@ -53,8 +53,8 @@ class Setting extends Model
         // Google Maps "Embed a map" src URL; leave empty to hide the map.
         'map_embed_url' => '',
         'map_link' => 'https://maps.google.com/?q=Canja+Street,+Kalawag+1,+Isulan,+Sultan+Kudarat',
-        'about_text' => 'Fresh Fold Laundry started as a two-machine shop for busy neighbors who needed clean clothes without losing their weekend. Today we wash, dry, fold and press for students, families and working professionals — with every order tagged, tracked and texted to you, so nothing gets lost and you always know when your laundry is ready.',
-        'founded_year' => '2019',
+        'about_text' => 'Metric Laundry Services is a neighborhood laundry shop on Canja Street, Kalawag 1, Isulan. We wash, dry, fold and press for students, families and working professionals — with every order tagged, tracked and texted to you, so nothing gets lost and you always know when your laundry is ready.',
+        'founded_year' => '',
         'service_area' => 'Pickup and delivery within 5 km of the shop',
         // Pickups the riders can handle per time slot (9 AM / 1 PM / 4 PM).
         'pickup_slot_capacity' => '4',

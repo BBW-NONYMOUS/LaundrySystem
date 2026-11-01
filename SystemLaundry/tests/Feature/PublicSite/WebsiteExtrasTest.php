@@ -83,7 +83,7 @@ class WebsiteExtrasTest extends TestCase
         $this->get(route('public.privacy'))->assertOk()->assertInertia(fn ($page) => $page
             ->component('public/privacy')
             ->where('retentionMonths', 12)
-            ->where('seo.title', 'Privacy Notice | Fresh Fold Laundry'));
+            ->where('seo.title', 'Privacy Notice | Metric Laundry Services'));
 
         $this->get(route('sitemap'))->assertSee('<loc>'.route('public.privacy').'</loc>', false);
     }

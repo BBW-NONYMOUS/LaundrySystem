@@ -257,7 +257,7 @@ export default function Home({
                     <Reveal className="order-3 lg:col-start-1 lg:row-start-2">
                         <SiteImage
                             name="why-us"
-                            alt="Staff sorting laundry by color before washing"
+                            alt={`The entrance to ${site.name ?? 'our shop'}`}
                             icon={ShieldCheck}
                             className="mx-auto max-w-md lg:mx-0"
                         />

@@ -1,6 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
 import { CircleCheck, Star } from 'lucide-react';
-import AppLogoIcon from '@/components/app-logo-icon';
 import { Container } from '@/components/public/section';
 import { SiteImage } from '@/components/public/site-image';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +10,7 @@ import type { PublicStats } from '@/types/public';
 
 /**
  * Home hero: eyebrow, the page's H1, live price lead, two CTAs, quick facts and the shop
- * photo with a sample "ready" SMS floating over it (docs/public-site/04 §3.2).
+ * photo (docs/public-site/04 §3.2).
  */
 export function Hero({
     wdfPrice,
@@ -127,29 +126,13 @@ export function Hero({
                     )}
                 </div>
 
-                <div className="relative lg:col-span-5">
+                <div className="lg:col-span-5">
                     <SiteImage
                         name="hero"
                         priority
-                        alt={`Freshly folded laundry ready for pickup at ${site.name ?? 'our shop'}`}
+                        alt={`Washers and dryers inside ${site.name ?? 'our shop'}`}
                         className="shadow-lg"
                     />
-                    {/* Sample of the SMS customers receive (decorative). */}
-                    <div
-                        aria-hidden
-                        className="absolute -bottom-6 -left-6 hidden max-w-[17rem] gap-3 rounded-2xl border bg-background/95 p-4 text-sm shadow-lg backdrop-blur sm:flex"
-                    >
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                            <AppLogoIcon className="size-5 fill-current" />
-                        </span>
-                        <p className="leading-snug">
-                            Hi Maria! Your laundry{' '}
-                            <span className="font-mono text-xs">
-                                LND-20261023-0042
-                            </span>{' '}
-                            is ready for pickup. — {site.name}
-                        </p>
-                    </div>
                 </div>
             </Container>
         </section>
