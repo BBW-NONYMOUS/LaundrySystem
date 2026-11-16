@@ -31,4 +31,18 @@ return [
 
     'auto_brand_images' => (bool) env('LAUNDRY_AUTO_BRAND_IMAGES', true),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Queue Worker Through the Scheduler
+    |--------------------------------------------------------------------------
+    |
+    | Shared hosting can't keep `php artisan queue:work` running, so customer
+    | SMS/email would never leave the queue. When true, the every-minute cron
+    | (`schedule:run`) also empties the queue. Leave false where a real worker
+    | runs (Supervisor on a VPS, or `composer run dev` locally).
+    |
+    */
+
+    'queue_via_scheduler' => (bool) env('QUEUE_VIA_SCHEDULER', false),
+
 ];

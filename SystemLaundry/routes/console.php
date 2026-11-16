@@ -23,3 +23,10 @@ Schedule::command('activitylog:clean')->monthly();
 // Website inbox retention promised in the Privacy Notice: booking requests and contact
 // messages older than 12 months (BookingRequest::prunable(), ContactMessage::prunable()).
 Schedule::command('model:prune')->dailyAt('02:00');
+
+// Shared hosting: no long-running worker, so each minute's cron run sends queued SMS/email.
+if (config('laundry.queue_via_scheduler')) {
+    Schedule::command('queue:work --stop-when-empty --tries=3 --max-time=50')
+        ->everyMinute()
+        ->withoutOverlapping(5);
+}
