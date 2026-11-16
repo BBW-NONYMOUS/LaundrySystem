@@ -117,6 +117,12 @@ export function TripCard({
                         {trip.failure_reason}
                     </span>
                 )}
+                {trip.reschedule_reason && (
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <CalendarClock className="size-3.5" />
+                        Rescheduled: {trip.reschedule_reason}
+                    </span>
+                )}
             </div>
 
             {!closed && (

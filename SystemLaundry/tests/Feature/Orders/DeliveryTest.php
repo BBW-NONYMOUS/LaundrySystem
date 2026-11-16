@@ -6,6 +6,7 @@ use App\Enums\DeliveryStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Notifications\OrderOutForDelivery;
+use App\Notifications\TripRescheduled;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\Concerns\SetsUpLaundry;
@@ -85,11 +86,65 @@ class DeliveryTest extends TestCase
         $this->assertSame('Nobody home', $delivery->failure_reason);
         $this->assertSame(1, $delivery->attempts);
 
-        // The counter reschedules it.
+        // The counter reschedules it, saying why.
         $this->actingAs($this->cashier())->put(route('deliveries.update', $delivery), [
             'scheduled_at' => now()->addDay()->setTime(9, 0)->toDateTimeString(),
+            'reschedule_reason' => 'Nobody was home',
         ])->assertSessionHasNoErrors();
         $this->assertSame(DeliveryStatus::Scheduled, $delivery->refresh()->status);
+        $this->assertSame('Nobody was home', $delivery->reschedule_reason);
+    }
+
+    public function test_moving_a_trip_needs_a_reason_and_tells_the_customer(): void
+    {
+        $order = $this->orderWithItems(['status' => OrderStatus::Ready]);
+        $tomorrow = now()->addDay()->setTime(9, 0);
+        $delivery = $order->deliveries()->create([
+            'type' => 'delivery', 'status' => 'scheduled',
+            'scheduled_at' => $tomorrow, 'address' => 'x', 'contact_phone' => '09181234567',
+        ]);
+        $cashier = $this->cashier();
+
+        // Same time, new address: not a reschedule.
+        $this->actingAs($cashier)->put(route('deliveries.update', $delivery), [
+            'scheduled_at' => $tomorrow->toDateTimeString(),
+            'address' => '12 Mabini St.',
+        ])->assertSessionHasNoErrors();
+        $this->assertNull($delivery->refresh()->reschedule_reason);
+        Notification::assertNothingSent();
+
+        // Stray seconds on an older time (seeded data) aren't a move either.
+        $delivery->update(['scheduled_at' => $tomorrow->setTime(9, 0, 37)]);
+        $this->actingAs($cashier)->put(route('deliveries.update', $delivery), [
+            'scheduled_at' => $tomorrow->toDateTimeString(),
+            'address' => '14 Mabini St.',
+        ])->assertSessionHasNoErrors();
+        Notification::assertNothingSent();
+
+        // Another time without a reason is refused and nothing changes.
+        $this->actingAs($cashier)->put(route('deliveries.update', $delivery), [
+            'scheduled_at' => $tomorrow->setTime(13, 0)->toDateTimeString(),
+        ])->assertSessionHasErrors('reschedule_reason');
+        $this->assertTrue($delivery->refresh()->scheduled_at->equalTo($tomorrow));
+
+        // The order page's trip dialog follows the same rule.
+        $this->actingAs($cashier)->post(route('orders.deliveries.store', $order), [
+            'type' => 'delivery',
+            'scheduled_at' => $tomorrow->setTime(16, 0)->toDateTimeString(),
+            'address' => '12 Mabini St.',
+            'contact_phone' => '09181234567',
+            'reschedule_reason' => 'Rider unavailable',
+        ])->assertSessionHasNoErrors();
+
+        $delivery->refresh();
+        $this->assertSame('Rider unavailable', $delivery->reschedule_reason);
+        $this->assertNotNull($delivery->rescheduled_at);
+        Notification::assertSentTo(
+            $order->customer,
+            TripRescheduled::class,
+            fn (TripRescheduled $notification) => str_contains($notification->text($order->customer), 'Reason: Rider unavailable.')
+                && str_contains($notification->text($order->customer), '4:00 PM'),
+        );
     }
 
     public function test_riders_only_see_and_act_on_their_own_trips(): void

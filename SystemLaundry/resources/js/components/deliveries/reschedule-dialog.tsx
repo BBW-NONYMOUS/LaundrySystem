@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
 import type { FormEvent } from 'react';
 import { DatePicker } from '@/components/date-picker';
+import { RescheduleReasonField } from '@/components/deliveries/reschedule-reason-field';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,6 +29,7 @@ export const TIME_SLOTS = [
 
 /**
  * Move a trip to another day/slot or fix the address. A failed trip becomes Scheduled again.
+ * Moving it asks for a reason, which the customer is told.
  */
 export function RescheduleDialog({
     trip,
@@ -42,21 +44,29 @@ export function RescheduleDialog({
     const currentSlot = format(scheduled, 'HH:mm');
     const form = useForm({
         date: format(scheduled, 'yyyy-MM-dd'),
-        slot: TIME_SLOTS.some((slot) => slot.value === currentSlot)
-            ? currentSlot
-            : '09:00',
+        // Keep an off-slot time as-is so fixing only the address doesn't move the trip.
+        slot: currentSlot,
         address: trip.address,
+        reschedule_reason: '',
     });
+
+    // A reason is only needed when the trip actually moves (or a failed trip is retried).
+    const moved =
+        trip.status === 'failed' ||
+        form.data.date !== format(scheduled, 'yyyy-MM-dd') ||
+        form.data.slot !== currentSlot;
 
     // Laravel expects one "scheduled_at" field: "yyyy-MM-dd HH:mm:00".
     form.transform((data) => ({
         scheduled_at: `${data.date} ${data.slot}:00`,
         address: data.address,
+        // The server decides whether the trip moved; it ignores a reason when it didn't.
+        reschedule_reason: data.reschedule_reason.trim() || null,
     }));
 
     // The server validates the transformed field, so its error comes back as "scheduled_at".
     const errors = form.errors as Partial<
-        Record<'scheduled_at' | 'address', string>
+        Record<'scheduled_at' | 'address' | 'reschedule_reason', string>
     >;
 
     const submit = (event: FormEvent) => {
@@ -132,6 +142,17 @@ export function RescheduleDialog({
                         <InputError message={errors.address} />
                     </div>
 
+                    {(moved || errors.reschedule_reason) && (
+                        <RescheduleReasonField
+                            id="reschedule-reason"
+                            value={form.data.reschedule_reason}
+                            onChange={(value) =>
+                                form.setData('reschedule_reason', value)
+                            }
+                            error={errors.reschedule_reason}
+                        />
+                    )}
+
                     <DialogFooter>
                         <Button
                             type="button"
@@ -140,7 +161,14 @@ export function RescheduleDialog({
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={form.processing}>
+                        <Button
+                            type="submit"
+                            disabled={
+                                form.processing ||
+                                (moved &&
+                                    form.data.reschedule_reason.trim() === '')
+                            }
+                        >
                             {form.processing && <Spinner />}
                             Save schedule
                         </Button>

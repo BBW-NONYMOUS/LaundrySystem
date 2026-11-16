@@ -146,6 +146,8 @@ export type Delivery = {
     attempts: number;
     completed_at: string | null;
     failure_reason: string | null;
+    reschedule_reason: string | null;
+    rescheduled_at: string | null;
     notes: string | null;
 };
 

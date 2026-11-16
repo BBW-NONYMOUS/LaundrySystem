@@ -30,6 +30,7 @@ class UpdateDeliveryRequest extends FormRequest
             'contact_phone' => ['sometimes', 'required', 'string', new PhilippineMobile],
             'rider_id' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')],
             'notes' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'reschedule_reason' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

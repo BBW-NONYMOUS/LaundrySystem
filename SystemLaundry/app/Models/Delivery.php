@@ -28,6 +28,8 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property int $attempts
  * @property CarbonImmutable|null $completed_at
  * @property string|null $failure_reason
+ * @property string|null $reschedule_reason
+ * @property CarbonImmutable|null $rescheduled_at
  * @property string|null $notes
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
@@ -37,7 +39,8 @@ use Spatie\Activitylog\Support\LogOptions;
  */
 #[Fillable([
     'order_id', 'type', 'status', 'rider_id', 'assigned_by', 'scheduled_at', 'address',
-    'contact_phone', 'attempts', 'completed_at', 'failure_reason', 'notes',
+    'contact_phone', 'attempts', 'completed_at', 'failure_reason', 'reschedule_reason',
+    'rescheduled_at', 'notes',
 ])]
 class Delivery extends Model
 {
@@ -54,6 +57,7 @@ class Delivery extends Model
             'status' => DeliveryStatus::class,
             'scheduled_at' => 'datetime',
             'completed_at' => 'datetime',
+            'rescheduled_at' => 'datetime',
             'attempts' => 'integer',
         ];
     }
@@ -61,7 +65,7 @@ class Delivery extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['status', 'rider_id', 'scheduled_at', 'failure_reason'])
+            ->logOnly(['status', 'rider_id', 'scheduled_at', 'failure_reason', 'reschedule_reason'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->useLogName('deliveries');

@@ -909,6 +909,12 @@ export default function OrderShow({
                                                     {trip.failure_reason}
                                                 </p>
                                             )}
+                                            {trip.reschedule_reason && (
+                                                <p className="text-xs text-muted-foreground">
+                                                    Rescheduled:{' '}
+                                                    {trip.reschedule_reason}
+                                                </p>
+                                            )}
                                         </div>
                                     ))}
                             </CardContent>

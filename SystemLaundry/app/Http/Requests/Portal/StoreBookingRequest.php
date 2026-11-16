@@ -3,13 +3,13 @@
 namespace App\Http\Requests\Portal;
 
 use App\Enums\Permission;
-use App\Rules\PhilippineMobile;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
  * A customer books a pickup from the portal. Weights are unknown until the laundry
- * reaches the shop, so no items are priced here.
+ * reaches the shop, so no items are priced here. Contact details come from the
+ * customer's profile; an address is asked for only when the profile has none.
  */
 class StoreBookingRequest extends FormRequest
 {
@@ -25,8 +25,7 @@ class StoreBookingRequest extends FormRequest
     {
         return [
             'scheduled_at' => ['required', 'date', 'after:now'],
-            'address' => ['required', 'string', 'max:500'],
-            'contact_phone' => ['required', 'string', new PhilippineMobile],
+            'address' => [Rule::requiredIf(fn () => blank($this->user()?->customer?->address)), 'nullable', 'string', 'max:500'],
             'wants_delivery' => ['boolean'],
             'is_express' => ['boolean'],
             'service_ids' => ['nullable', 'array'],

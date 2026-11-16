@@ -9,6 +9,7 @@ use App\Enums\UserRole;
 use App\Models\Delivery;
 use App\Models\Order;
 use App\Models\User;
+use App\Notifications\TripRescheduled;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -27,6 +28,8 @@ class DeliveryService
 
     /**
      * Schedule (or reschedule) a trip. Adding a trip that wasn't booked at checkout adds its fee.
+     * Moving an existing trip to another date/time (or retrying a failed one) needs a reason,
+     * which is saved on the trip and texted to the customer.
      */
     public function schedule(
         Order $order,
@@ -37,6 +40,7 @@ class DeliveryService
         ?User $rider,
         User $actor,
         ?string $notes = null,
+        ?string $rescheduleReason = null,
     ): Delivery {
         if ($order->status->isFinal()) {
             throw ValidationException::withMessages(['order' => 'This order is already closed.']);
@@ -50,7 +54,9 @@ class DeliveryService
             $this->ensureRider($rider);
         }
 
-        return DB::transaction(function () use ($order, $type, $scheduledAt, $address, $contactPhone, $rider, $actor, $notes) {
+        $moved = false;
+
+        $delivery = DB::transaction(function () use ($order, $type, $scheduledAt, $address, $contactPhone, $rider, $actor, $notes, $rescheduleReason, &$moved) {
             $existing = $order->deliveries()->where('type', $type)->first();
 
             if ($existing?->status === DeliveryStatus::Completed) {
@@ -62,6 +68,15 @@ class DeliveryService
                 $order->recalculateTotals($this->pricing->expressSurchargePercent());
             }
 
+            // Compared to the minute, like the dialogs: stray seconds on an old time aren't a move.
+            $moved = $existing !== null
+                && ($existing->status === DeliveryStatus::Failed
+                    || $existing->scheduled_at->format('Y-m-d H:i') !== $scheduledAt->format('Y-m-d H:i'));
+
+            if ($moved && blank($rescheduleReason)) {
+                throw ValidationException::withMessages(['reschedule_reason' => 'Say why the trip is being moved. The customer will see this.']);
+            }
+
             return $order->deliveries()->updateOrCreate(['type' => $type], [
                 'status' => DeliveryStatus::Scheduled,
                 'scheduled_at' => $scheduledAt,
@@ -70,8 +85,15 @@ class DeliveryService
                 'rider_id' => $rider->id ?? $existing?->rider_id,
                 'assigned_by' => $rider !== null ? $actor->id : $existing?->assigned_by,
                 'notes' => $notes,
+                ...($moved ? ['reschedule_reason' => $rescheduleReason, 'rescheduled_at' => now()] : []),
             ]);
         });
+
+        if ($moved) {
+            $order->customer->notify(new TripRescheduled($order, $delivery));
+        }
+
+        return $delivery;
     }
 
     public function assign(Delivery $delivery, User $rider, User $actor): Delivery

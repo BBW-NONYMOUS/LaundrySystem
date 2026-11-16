@@ -75,6 +75,7 @@ class DeliveryController extends Controller
             rider: $request->filled('rider_id') ? User::query()->findOrFail($request->integer('rider_id')) : null,
             actor: $request->user(),
             notes: $request->input('notes'),
+            rescheduleReason: $request->input('reschedule_reason'),
         );
 
         $this->toast("{$delivery->type->label()} scheduled for {$delivery->scheduled_at->format('M j, g:i A')}.");
@@ -103,6 +104,7 @@ class DeliveryController extends Controller
                 rider: $riderId ? User::query()->findOrFail($riderId) : null,
                 actor: $request->user(),
                 notes: array_key_exists('notes', $data) ? $data['notes'] : $delivery->notes,
+                rescheduleReason: $data['reschedule_reason'] ?? null,
             );
         }
 

@@ -15,6 +15,7 @@ use App\Models\Setting;
 use App\Services\OrderService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -66,6 +67,7 @@ class PortalController extends Controller
 
     /**
      * Book a pickup. The order starts as Pending; the shop weighs and prices it on arrival.
+     * The rider uses the address and phone on the customer's profile.
      */
     public function store(StoreBookingRequest $request, OrderService $orders): RedirectResponse
     {
@@ -78,12 +80,20 @@ class PortalController extends Controller
             $request->input('special_instructions'),
         ])->filter()->implode("\n");
 
-        $order = $orders->create([
-            'customer_id' => $customer->id,
-            'is_express' => $request->boolean('is_express'),
-            'special_instructions' => $notes !== '' ? $notes : null,
-            'pickup' => $request->safe()->only(['scheduled_at', 'address', 'contact_phone']),
-        ], $request->user());
+        $order = DB::transaction(function () use ($request, $orders, $customer, $notes) {
+            // First booking without a saved address: keep it so they aren't asked again.
+            // Saved with the order so a failed booking doesn't leave a half-done profile edit.
+            if (blank($customer->address) && $request->filled('address')) {
+                $customer->update(['address' => $request->string('address')->toString()]);
+            }
+
+            return $orders->create([
+                'customer_id' => $customer->id,
+                'is_express' => $request->boolean('is_express'),
+                'special_instructions' => $notes !== '' ? $notes : null,
+                'pickup' => $request->safe()->only(['scheduled_at']),
+            ], $request->user());
+        });
 
         $this->toast("Pickup booked! Your order number is {$order->order_number}.");
 

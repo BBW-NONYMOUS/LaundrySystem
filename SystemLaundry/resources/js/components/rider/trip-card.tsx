@@ -128,6 +128,11 @@ export function TripCard({
                         Last attempt: {trip.failure_reason}
                     </p>
                 )}
+                {trip.reschedule_reason && (
+                    <p className="text-sm text-muted-foreground">
+                        Rescheduled: {trip.reschedule_reason}
+                    </p>
+                )}
                 {trip.notes && <p className="text-sm">Note: {trip.notes}</p>}
 
                 {collect && !finished && (

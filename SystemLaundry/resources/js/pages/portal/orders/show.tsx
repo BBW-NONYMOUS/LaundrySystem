@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, MapPin, Truck } from 'lucide-react';
+import { ArrowLeft, CalendarClock, MapPin, Truck } from 'lucide-react';
 import { OrderStepper } from '@/components/order-stepper';
 import {
     OrderItemsTable,
@@ -130,6 +130,15 @@ export default function PortalOrderShow({ order }: { order: Order }) {
                                                 <MapPin className="mt-0.5 size-3.5 shrink-0" />
                                                 {trip.address}
                                             </span>
+                                            {trip.reschedule_reason && (
+                                                <p className="flex items-start gap-1 rounded-md bg-muted px-2 py-1.5 text-muted-foreground">
+                                                    <CalendarClock className="mt-0.5 size-3.5 shrink-0" />
+                                                    <span>
+                                                        Rescheduled. Reason:{' '}
+                                                        {trip.reschedule_reason}
+                                                    </span>
+                                                </p>
+                                            )}
                                         </div>
                                     ))}
                                 </CardContent>

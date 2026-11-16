@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Info, Zap } from 'lucide-react';
+import { Info, MapPin, Zap } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { DatePicker } from '@/components/date-picker';
 import InputError from '@/components/input-error';
@@ -14,7 +14,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
@@ -49,8 +48,8 @@ export default function BookPickup({ customer, services, pricing }: Props) {
     const form = useForm({
         date: '',
         slot: '09:00',
-        address: customer.address ?? '',
-        contact_phone: customer.phone,
+        // Only asked for when the profile has no address yet.
+        address: '',
         service_ids: [] as number[],
         is_express: false,
         wants_delivery: true,
@@ -79,8 +78,9 @@ export default function BookPickup({ customer, services, pricing }: Props) {
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        form.transform(({ date, slot, ...rest }) => ({
+        form.transform(({ date, slot, address, ...rest }) => ({
             ...rest,
+            ...(customer.address ? {} : { address }),
             is_express: rest.is_express && expressAvailable,
             scheduled_at: date ? `${date} ${slot}:00` : '',
         }));
@@ -109,7 +109,7 @@ export default function BookPickup({ customer, services, pricing }: Props) {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>When and where</CardTitle>
+                        <CardTitle>When should we come?</CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-5">
                         <div className="grid gap-4 sm:grid-cols-2">
@@ -147,35 +147,40 @@ export default function BookPickup({ customer, services, pricing }: Props) {
                             </div>
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="address">Pickup address</Label>
-                            <Textarea
-                                id="address"
-                                value={data.address}
-                                onChange={(event) =>
-                                    setData('address', event.target.value)
-                                }
-                                placeholder="House no., street, barangay, city"
-                                rows={2}
-                                required
-                            />
-                            <InputError message={errors.address} />
-                        </div>
-
-                        <div className="grid gap-2 sm:max-w-xs">
-                            <Label htmlFor="contact_phone">Mobile number</Label>
-                            <Input
-                                id="contact_phone"
-                                type="tel"
-                                inputMode="tel"
-                                value={data.contact_phone}
-                                onChange={(event) =>
-                                    setData('contact_phone', event.target.value)
-                                }
-                                required
-                            />
-                            <InputError message={errors.contact_phone} />
-                        </div>
+                        {customer.address ? (
+                            <p className="flex items-start gap-2 text-sm text-muted-foreground">
+                                <MapPin className="mt-0.5 size-4 shrink-0" />
+                                <span>
+                                    Our rider will come to{' '}
+                                    <span className="font-medium text-foreground">
+                                        {customer.address}
+                                    </span>{' '}
+                                    and text{' '}
+                                    <span className="font-medium text-foreground tabular-nums">
+                                        {customer.phone}
+                                    </span>
+                                    .
+                                </span>
+                            </p>
+                        ) : (
+                            <div className="grid gap-2">
+                                <Label htmlFor="address">Pickup address</Label>
+                                <Textarea
+                                    id="address"
+                                    value={data.address}
+                                    onChange={(event) =>
+                                        setData('address', event.target.value)
+                                    }
+                                    placeholder="House no., street, barangay, city"
+                                    rows={2}
+                                    required
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                    We'll save it to your profile for next time.
+                                </p>
+                                <InputError message={errors.address} />
+                            </div>
+                        )}
 
                         <label className="flex items-center justify-between gap-4 rounded-lg border p-4">
                             <span className="grid gap-1">

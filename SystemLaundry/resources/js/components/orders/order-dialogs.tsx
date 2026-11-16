@@ -1,7 +1,9 @@
 import { router, useForm } from '@inertiajs/react';
+import { format, parseISO } from 'date-fns';
 import { Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { DatePicker } from '@/components/date-picker';
+import { RescheduleReasonField } from '@/components/deliveries/reschedule-reason-field';
 import InputError from '@/components/input-error';
 import { PaymentFields } from '@/components/payment-fields';
 import type { PaymentValues } from '@/components/payment-fields';
@@ -171,7 +173,19 @@ export function ScheduleTripDialog({
         contact_phone: existing?.contact_phone ?? order.customer?.phone ?? '',
         rider_id: existing?.rider?.id ? String(existing.rider.id) : '',
         notes: '',
+        reschedule_reason: '',
     });
+
+    // Moving a trip this order already has (or retrying a failed one) needs a reason.
+    const current = order.deliveries?.find(
+        (trip) => trip.type === form.data.type,
+    );
+    const moved =
+        current !== undefined &&
+        current.status !== 'completed' &&
+        (current.status === 'failed' ||
+            `${form.data.date} ${form.data.slot}` !==
+                format(parseISO(current.scheduled_at), 'yyyy-MM-dd HH:mm'));
 
     useEffect(() => {
         // Riders are an optional prop: only fetched when this dialog is opened.
@@ -188,10 +202,16 @@ export function ScheduleTripDialog({
             contact_phone: data.contact_phone,
             rider_id: data.rider_id === '' ? null : Number(data.rider_id),
             notes: data.notes || null,
+            // The server decides whether the trip moved; it ignores a reason when it didn't.
+            reschedule_reason: data.reschedule_reason.trim() || null,
         }));
         form.post(storeTrip.url(order.id), {
             preserveScroll: true,
-            onSuccess: () => onOpenChange(false),
+            onSuccess: () => {
+                // The dialog stays mounted: don't carry this reason into the next reschedule.
+                form.reset('reschedule_reason');
+                onOpenChange(false);
+            },
         });
     };
 
@@ -343,6 +363,17 @@ export function ScheduleTripDialog({
                             <InputError message={form.errors.rider_id} />
                         </div>
                     </div>
+
+                    {(moved || form.errors.reschedule_reason) && (
+                        <RescheduleReasonField
+                            id="trip-reschedule-reason"
+                            value={form.data.reschedule_reason}
+                            onChange={(value) =>
+                                form.setData('reschedule_reason', value)
+                            }
+                            error={form.errors.reschedule_reason}
+                        />
+                    )}
 
                     <DialogFooter>
                         <Button

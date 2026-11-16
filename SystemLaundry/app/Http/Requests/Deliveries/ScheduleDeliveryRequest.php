@@ -27,6 +27,8 @@ class ScheduleDeliveryRequest extends FormRequest
             'contact_phone' => ['required', 'string', new PhilippineMobile],
             'rider_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'notes' => ['nullable', 'string', 'max:255'],
+            // Required by DeliveryService when an existing trip moves to another date/time.
+            'reschedule_reason' => ['nullable', 'string', 'max:255'],
         ];
     }
 

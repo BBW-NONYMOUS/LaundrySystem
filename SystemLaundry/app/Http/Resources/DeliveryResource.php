@@ -42,6 +42,8 @@ class DeliveryResource extends JsonResource
             'attempts' => $this->attempts,
             'completed_at' => $this->completed_at?->toIso8601String(),
             'failure_reason' => $this->failure_reason,
+            'reschedule_reason' => $this->reschedule_reason,
+            'rescheduled_at' => $this->rescheduled_at?->toIso8601String(),
             'notes' => $this->notes,
         ];
     }
