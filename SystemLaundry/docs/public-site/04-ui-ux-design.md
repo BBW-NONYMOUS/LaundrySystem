@@ -684,6 +684,8 @@ Completed and delivered orders also show "**How did we do?** Rate your laundry â
 
 ## 6. Book a Pickup (`/book`)
 
+> **Changed (Nov 2026):** the guest page now only asks **When should we come?** (date and time). Below it, **Log in to book** and **Create an account** go through `/book/continue`, which sends the customer to the portal booking with that date and time filled in after they sign in. Name, mobile and address come from their account, and the laundry options are on the portal page, so the guest page no longer has the details, laundry, consent or summary parts. The original guest form is described below for reference; `POST /book` still accepts it.
+
 One page, three numbered steps, with a sticky summary on desktop. On phones the summary becomes a bar above the submit button.
 
 ```

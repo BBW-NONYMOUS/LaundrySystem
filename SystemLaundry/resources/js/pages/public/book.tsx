@@ -1,233 +1,58 @@
-import { router, useForm, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
 import { CalendarX } from 'lucide-react';
 import { useState } from 'react';
-import type { FormEvent, ReactNode } from 'react';
-import { BookingConfirmationDialog } from '@/components/public/booking-confirmation-dialog';
+import type { ComponentProps, ReactNode } from 'react';
 import { BookingDatePicker } from '@/components/public/booking-date-picker';
 import { BookingSlots } from '@/components/public/booking-slots';
-import {
-    BookingSummary,
-    EstimateTotal,
-} from '@/components/public/booking-summary';
 import { PageHero } from '@/components/public/page-hero';
-import {
-    FormAlert,
-    HoneypotField,
-    PublicField,
-    focusFirstError,
-} from '@/components/public/public-form';
+import { PublicField } from '@/components/public/public-form';
 import { Section } from '@/components/public/section';
 import { SeoHead } from '@/components/public/seo-head';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
-import { displayPhone, estimate, peso, telHref } from '@/lib/public-site';
-import { privacy } from '@/routes/public';
-import { store } from '@/routes/public/book';
-import type { Service } from '@/types/models';
-import type {
-    BookableDate,
-    BookingConfirmation,
-    BookingSlot,
-    PricingRules,
-    Seo,
-} from '@/types/public';
+import { displayPhone, telHref } from '@/lib/public-site';
+import { proceed } from '@/routes/public/book';
+import type { BookableDate, BookingSlot, Seo } from '@/types/public';
 
 type Props = {
-    services: Service[];
-    pricing: PricingRules;
     dates: BookableDate[];
     selectedDate: string;
     slots: BookingSlot[];
-    formToken: string;
     seo: Seo;
 };
 
-type BookingForm = {
-    name: string;
-    phone: string;
-    email: string;
-    address: string;
-    pickup_date: string;
-    time_slot: string;
-    service_id: string;
-    estimated_quantity: string;
-    is_express: boolean;
-    wants_delivery: boolean;
-    special_instructions: string;
-    consent: boolean;
-    website: string;
-    form_token: string;
-};
-
-/** Form order, for moving focus to the first error. */
-const FIELDS = [
-    'pickup_date',
-    'time_slot',
-    'name',
-    'phone',
-    'email',
-    'address',
-    'service_id',
-    'estimated_quantity',
-    'special_instructions',
-    'consent',
-];
-
-const NO_SERVICE = 'none';
-
-/** ?service=&qty= from the Pricing page estimator. */
-function prefill(url: string, services: Service[]) {
-    const query = new URLSearchParams(url.split('?')[1] ?? '');
-    const serviceId = query.get('service') ?? '';
-    const qty = Number(query.get('qty'));
-
-    return {
-        service_id: services.some((service) => String(service.id) === serviceId)
-            ? serviceId
-            : '',
-        estimated_quantity: qty > 0 && qty <= 200 ? String(qty) : '',
-    };
-}
-
 /**
- * Guest "Book a Pickup" (docs/public-site/04 §6): when, who, what. Saved as a booking
- * request that staff confirm by SMS.
+ * Guest "Book a Pickup": pick a day and time, then log in or register. The portal
+ * booking takes over from there with that time filled in, and uses the name, mobile
+ * and address on the customer's account, so the guest page doesn't ask for them.
  */
-export default function BookPickup({
-    services,
-    pricing,
-    dates,
-    selectedDate,
-    slots,
-    formToken,
-    seo,
-}: Props) {
-    const page = usePage();
-    const { site } = page.props;
+export default function BookPickup({ dates, selectedDate, slots, seo }: Props) {
+    const { site } = usePage().props;
     const [loadingSlots, setLoadingSlots] = useState(false);
-    const [dismissed, setDismissed] = useState<string | null>(null);
-
-    const [initial] = useState<BookingForm>(() => ({
-        name: '',
-        phone: '',
-        email: '',
-        address: '',
-        pickup_date: selectedDate,
-        time_slot: '',
-        is_express: false,
-        wants_delivery: true,
-        special_instructions: '',
-        consent: false,
-        website: '',
-        form_token: formToken,
-        ...prefill(page.url, services),
-    }));
-    const form = useForm<BookingForm>(initial);
-    const { data, setData } = form;
-    const errors = form.errors as Record<string, string | undefined>;
-
-    const booking =
-        (page.flash.booking as BookingConfirmation | undefined) ?? null;
-    const confirmation =
-        booking && booking.reference !== dismissed ? booking : null;
-
-    const service =
-        services.find((entry) => String(entry.id) === data.service_id) ?? null;
-    const perKg = service ? service.pricing_unit === 'per_kg' : true;
-    const expressAllowed = service ? service.offers_express : true;
-    const slot = slots.find((entry) => entry.value === data.time_slot) ?? null;
-    const quantity = Number(data.estimated_quantity) || null;
-    const total = estimate(service, quantity ?? 0, {
-        express: data.is_express && expressAllowed,
-        trips: 1 + (data.wants_delivery ? 1 : 0),
-        rules: pricing,
-    });
-    const symbol = pricing.currency_symbol ?? site.currency_symbol;
-    // The chosen service's express time, else the fastest express time of any service.
-    const expressTimes = services.flatMap((entry) =>
-        entry.express_turnaround_hours ? [entry.express_turnaround_hours] : [],
-    );
-    const expressHours =
-        service?.express_turnaround_hours ??
-        (expressTimes.length > 0 ? Math.min(...expressTimes) : null);
+    const [date, setDate] = useState(selectedDate);
+    const [slot, setSlot] = useState('');
 
     // Slots belong to `selectedDate`; while another day loads, show placeholders.
-    const slotsForDate = selectedDate === data.pickup_date && !loadingSlots;
+    const slotsForDate = selectedDate === date && !loadingSlots;
     const allFull = slotsForDate && slots.every((entry) => !entry.available);
     const nextAvailable = dates.find(
-        (entry) => entry.date > data.pickup_date && entry.available,
+        (entry) => entry.date > date && entry.available,
     );
 
-    const chooseDate = (date: string) => {
-        setData((current) => ({
-            ...current,
-            pickup_date: date,
-            time_slot: '',
-        }));
+    const chooseDate = (next: string) => {
+        setDate(next);
+        setSlot('');
         router.reload({
             only: ['slots', 'selectedDate'],
-            data: { date },
+            data: { date: next },
             onStart: () => setLoadingSlots(true),
             onFinish: () => setLoadingSlots(false),
         });
     };
 
-    const chooseService = (value: string) => {
-        const id = value === NO_SERVICE ? '' : value;
-        const next = services.find((entry) => String(entry.id) === id);
-
-        setData((current) => ({
-            ...current,
-            service_id: id,
-            is_express:
-                next && !next.offers_express ? false : current.is_express,
-        }));
-    };
-
-    const submit = (event: FormEvent) => {
-        event.preventDefault();
-        form.transform((values) => ({
-            ...values,
-            service_id: values.service_id || null,
-            estimated_quantity: values.estimated_quantity || null,
-            email: values.email || null,
-            special_instructions: values.special_instructions || null,
-            is_express: values.is_express && expressAllowed,
-        }));
-        form.post(store.url(), {
-            preserveScroll: true,
-            onSuccess: (response) => {
-                // Fresh form for the next booking; the server sends a new time token.
-                form.setData({
-                    ...initial,
-                    service_id: '',
-                    estimated_quantity: '',
-                    pickup_date: stringProp(
-                        response.props.selectedDate,
-                        selectedDate,
-                    ),
-                    form_token: stringProp(response.props.formToken, formToken),
-                });
-                form.clearErrors();
-            },
-            onError: (fieldErrors) =>
-                focusFirstError('book', FIELDS, fieldErrors),
-        });
-    };
+    const chosen = slot ? { date, slot } : {};
 
     return (
         <>
@@ -235,34 +60,27 @@ export default function BookPickup({
             <PageHero
                 breadcrumb="Book a Pickup"
                 title="Book a pickup"
-                description="Tell us when and where. Our rider comes to your door, and we’ll confirm by SMS."
+                description="Tell us when. Our rider comes to your door, and we’ll confirm by SMS."
             />
 
             <Section className="py-10 md:py-16">
-                <form
-                    onSubmit={submit}
-                    noValidate
-                    className="grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start"
-                >
-                    <div className="grid gap-8">
-                        <FormAlert message={errors.form} />
-                        <HoneypotField
-                            value={data.website}
-                            onChange={(value) => setData('website', value)}
-                        />
+                <div className="mx-auto grid max-w-3xl gap-8">
+                    <Card className="rounded-2xl shadow-sm">
+                        <CardContent className="grid gap-5 pt-6">
+                            <h2 className="text-xl font-semibold tracking-tight">
+                                When should we come?
+                            </h2>
 
-                        <Step title="When should we come?">
                             <PublicField
                                 id="book-pickup_date"
                                 label="Pickup date"
-                                error={errors.pickup_date}
                             >
                                 {(aria) => (
                                     <BookingDatePicker
                                         id={aria.id}
                                         describedBy={aria['aria-describedby']}
                                         dates={dates}
-                                        value={data.pickup_date}
+                                        value={date}
                                         onChange={chooseDate}
                                     />
                                 )}
@@ -271,7 +89,6 @@ export default function BookPickup({
                             <PublicField
                                 id="book-time_slot"
                                 label="Pickup time"
-                                error={errors.time_slot}
                             >
                                 {(aria) => (
                                     <BookingSlots
@@ -280,10 +97,8 @@ export default function BookPickup({
                                         invalid={aria['aria-invalid']}
                                         slots={slots}
                                         loading={!slotsForDate}
-                                        value={data.time_slot}
-                                        onChange={(value) =>
-                                            setData('time_slot', value)
-                                        }
+                                        value={slot}
+                                        onChange={setSlot}
                                     />
                                 )}
                             </PublicField>
@@ -296,7 +111,7 @@ export default function BookPickup({
                                         <p>
                                             All pickup times on{' '}
                                             {format(
-                                                parseISO(data.pickup_date),
+                                                parseISO(date),
                                                 'EEEE, MMMM d',
                                             )}{' '}
                                             are taken.
@@ -346,381 +161,51 @@ export default function BookPickup({
                                     </AlertDescription>
                                 </Alert>
                             )}
-                        </Step>
+                        </CardContent>
+                    </Card>
 
-                        <Step title="Your details">
-                            <div className="grid gap-5 sm:grid-cols-2">
-                                <PublicField
-                                    id="book-name"
-                                    label="Full name"
-                                    error={errors.name}
-                                    className="sm:col-span-2"
-                                >
-                                    {(aria) => (
-                                        <Input
-                                            {...aria}
-                                            name="name"
-                                            autoComplete="name"
-                                            value={data.name}
-                                            onChange={(event) =>
-                                                setData(
-                                                    'name',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder="Juan Dela Cruz"
-                                            className="h-11 text-base"
-                                        />
-                                    )}
-                                </PublicField>
-                                <PublicField
-                                    id="book-phone"
-                                    label="Mobile number"
-                                    error={errors.phone}
-                                >
-                                    {(aria) => (
-                                        <Input
-                                            {...aria}
-                                            name="phone"
-                                            type="tel"
-                                            inputMode="tel"
-                                            autoComplete="tel"
-                                            value={data.phone}
-                                            onChange={(event) =>
-                                                setData(
-                                                    'phone',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder="0917 123 4567"
-                                            className="h-11 text-base"
-                                        />
-                                    )}
-                                </PublicField>
-                                <PublicField
-                                    id="book-email"
-                                    label="Email"
-                                    optional
-                                    error={errors.email}
-                                >
-                                    {(aria) => (
-                                        <Input
-                                            {...aria}
-                                            name="email"
-                                            type="email"
-                                            autoComplete="email"
-                                            value={data.email}
-                                            onChange={(event) =>
-                                                setData(
-                                                    'email',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder="you@example.com"
-                                            className="h-11 text-base"
-                                        />
-                                    )}
-                                </PublicField>
-                                <PublicField
-                                    id="book-address"
-                                    label="Pickup address"
-                                    error={errors.address}
-                                    className="sm:col-span-2"
-                                >
-                                    {(aria) => (
-                                        <Textarea
-                                            {...aria}
-                                            name="address"
-                                            autoComplete="street-address"
-                                            rows={2}
-                                            value={data.address}
-                                            onChange={(event) =>
-                                                setData(
-                                                    'address',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder="House no., street, barangay, landmark"
-                                            className="text-base"
-                                        />
-                                    )}
-                                </PublicField>
-                            </div>
-                        </Step>
-
-                        <Step title="Your laundry">
-                            <div className="grid gap-5 sm:grid-cols-2">
-                                {/* "Not sure yet" in the list covers guests who can't pick a service. */}
-                                <PublicField
-                                    id="book-service_id"
-                                    label="Service"
-                                    error={errors.service_id}
-                                >
-                                    {(aria) => (
-                                        <Select
-                                            value={data.service_id || undefined}
-                                            onValueChange={chooseService}
-                                        >
-                                            <SelectTrigger
-                                                {...aria}
-                                                className="h-11! w-full text-base"
-                                            >
-                                                <SelectValue placeholder="Select a service" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value={NO_SERVICE}>
-                                                    Not sure yet
-                                                </SelectItem>
-                                                {services.map((entry) => (
-                                                    <SelectItem
-                                                        key={entry.id}
-                                                        value={String(entry.id)}
-                                                    >
-                                                        {entry.name} ·{' '}
-                                                        {peso(
-                                                            entry.price,
-                                                            symbol,
-                                                        )}
-                                                        /{entry.unit_short}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    )}
-                                </PublicField>
-                                <PublicField
-                                    id="book-estimated_quantity"
-                                    label={
-                                        perKg
-                                            ? 'Estimated weight (kg)'
-                                            : 'Number of pieces'
-                                    }
-                                    optional
-                                    error={errors.estimated_quantity}
-                                >
-                                    {(aria) => (
-                                        <Input
-                                            {...aria}
-                                            name="estimated_quantity"
-                                            type="number"
-                                            inputMode="decimal"
-                                            min={0}
-                                            max={200}
-                                            step={perKg ? 0.5 : 1}
-                                            value={data.estimated_quantity}
-                                            onChange={(event) =>
-                                                setData(
-                                                    'estimated_quantity',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder={perKg ? '6' : '2'}
-                                            className="h-11 text-base"
-                                        />
-                                    )}
-                                </PublicField>
-                            </div>
-
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                {expressAllowed && (
-                                    <CheckboxCard
-                                        id="book-is_express"
-                                        checked={data.is_express}
-                                        onChange={(checked) =>
-                                            setData('is_express', checked)
-                                        }
-                                        label={`Express (+${pricing.express_surcharge_percent}%)`}
-                                        description={
-                                            expressHours
-                                                ? `Ready in as little as ${expressHours} hours.`
-                                                : 'Faster turnaround for urgent loads.'
-                                        }
-                                    />
-                                )}
-                                <CheckboxCard
-                                    id="book-wants_delivery"
-                                    checked={data.wants_delivery}
-                                    onChange={(checked) =>
-                                        setData('wants_delivery', checked)
-                                    }
-                                    label="Deliver it back to me"
-                                    description={`+${peso(pricing.delivery_fee_per_trip, symbol)} per trip.`}
-                                />
-                            </div>
-
-                            <PublicField
-                                id="book-special_instructions"
-                                label="Special instructions"
-                                optional
-                                error={errors.special_instructions}
+                    <div className="grid gap-3">
+                        <p className="text-base text-muted-foreground">
+                            Log in or create an account to finish. We’ll use the
+                            name, mobile number and address on your account.
+                        </p>
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                            <ContinueButton href={proceed({ query: chosen })}>
+                                Log in to book
+                            </ContinueButton>
+                            <ContinueButton
+                                href={proceed({
+                                    query: { ...chosen, to: 'register' },
+                                })}
+                                variant="outline"
                             >
-                                {(aria) => (
-                                    <Textarea
-                                        {...aria}
-                                        name="special_instructions"
-                                        rows={3}
-                                        value={data.special_instructions}
-                                        onChange={(event) =>
-                                            setData(
-                                                'special_instructions',
-                                                event.target.value,
-                                            )
-                                        }
-                                        placeholder="e.g. separate the whites, no fabric softener, call when outside"
-                                        className="text-base"
-                                    />
-                                )}
-                            </PublicField>
-                        </Step>
-
-                        <div className="grid gap-5">
-                            <div className="grid gap-2">
-                                <div className="flex items-start gap-3">
-                                    <Checkbox
-                                        id="book-consent"
-                                        checked={data.consent}
-                                        onCheckedChange={(checked) =>
-                                            setData('consent', checked === true)
-                                        }
-                                        aria-invalid={
-                                            errors.consent ? true : undefined
-                                        }
-                                        aria-describedby={
-                                            errors.consent
-                                                ? 'book-consent-error'
-                                                : undefined
-                                        }
-                                        className="mt-0.5 size-5"
-                                    />
-                                    <Label
-                                        htmlFor="book-consent"
-                                        className="block text-base leading-snug font-normal"
-                                    >
-                                        I agree that {site.name} may use my
-                                        details to arrange this pickup. Read our{' '}
-                                        <a
-                                            href={privacy.url()}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="font-medium text-primary underline-offset-4 hover:underline"
-                                        >
-                                            Privacy Notice
-                                        </a>
-                                        .
-                                    </Label>
-                                </div>
-                                {errors.consent && (
-                                    <p
-                                        id="book-consent-error"
-                                        role="alert"
-                                        className="text-sm text-destructive"
-                                    >
-                                        {errors.consent}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Phones: the summary sits in the sidebar column below, so repeat the total here. */}
-                            {total && service && (
-                                <div className="rounded-xl border bg-fresh-soft p-4 lg:hidden">
-                                    <EstimateTotal
-                                        estimate={total}
-                                        service={service}
-                                        symbol={symbol}
-                                        compact
-                                    />
-                                </div>
-                            )}
-
-                            <Button
-                                type="submit"
-                                size="lg"
-                                className="h-12 w-full text-base sm:w-auto sm:justify-self-start sm:px-10"
-                                disabled={form.processing}
-                            >
-                                {form.processing && <Spinner />}
-                                Request Pickup
-                            </Button>
+                                Create an account
+                            </ContinueButton>
                         </div>
                     </div>
-
-                    <BookingSummary
-                        className="lg:sticky lg:top-24"
-                        summary={{
-                            date: data.pickup_date,
-                            window: slot?.window ?? null,
-                            service,
-                            quantity,
-                            express: data.is_express && expressAllowed,
-                            delivery: data.wants_delivery,
-                            estimate: total,
-                            symbol,
-                        }}
-                    />
-                </form>
+                </div>
             </Section>
-
-            <BookingConfirmationDialog
-                booking={confirmation}
-                onClose={() => setDismissed(booking?.reference ?? null)}
-            />
         </>
     );
 }
 
-/** One card of the booking form. Titled only — the cards read top to bottom, so no step numbers. */
-function Step({ title, children }: { title: string; children: ReactNode }) {
-    return (
-        <Card className="rounded-2xl shadow-sm">
-            <CardContent className="grid gap-5 pt-6">
-                <h2 className="text-xl font-semibold tracking-tight">
-                    {title}
-                </h2>
-                {children}
-            </CardContent>
-        </Card>
-    );
-}
-
-function CheckboxCard({
-    id,
-    checked,
-    onChange,
-    label,
-    description,
+function ContinueButton({
+    href,
+    variant = 'default',
+    children,
 }: {
-    id: string;
-    checked: boolean;
-    onChange: (checked: boolean) => void;
-    label: string;
-    description: string;
+    href: ComponentProps<typeof Link>['href'];
+    variant?: 'default' | 'outline';
+    children: ReactNode;
 }) {
     return (
-        <Label
-            htmlFor={id}
-            className="flex cursor-pointer items-start gap-3 rounded-xl border bg-card p-4 font-normal transition-colors hover:border-primary/50 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5"
+        <Button
+            asChild
+            size="lg"
+            variant={variant}
+            className="h-12 w-full text-base sm:w-auto sm:px-10"
         >
-            <Checkbox
-                id={id}
-                checked={checked}
-                onCheckedChange={(value) => onChange(value === true)}
-                aria-describedby={`${id}-description`}
-                className="mt-0.5 size-5"
-            />
-            <span className="grid gap-1">
-                <span className="text-base font-medium">{label}</span>
-                <span
-                    id={`${id}-description`}
-                    className="text-sm text-muted-foreground"
-                >
-                    {description}
-                </span>
-            </span>
-        </Label>
+            <Link href={href}>{children}</Link>
+        </Button>
     );
-}
-
-/** A string page prop from the redirect response, else the current value. */
-function stringProp(value: unknown, fallback: string): string {
-    return typeof value === 'string' ? value : fallback;
 }

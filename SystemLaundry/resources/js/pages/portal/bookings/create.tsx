@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { Info, MapPin, Zap } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { DatePicker } from '@/components/date-picker';
@@ -45,9 +45,14 @@ const slots = [
  * and texts the total.
  */
 export default function BookPickup({ customer, services, pricing }: Props) {
+    // ?date=&slot= carried over from the public Book page after logging in.
+    const query = new URLSearchParams(usePage().url.split('?')[1] ?? '');
+    const querySlot = query.get('slot');
     const form = useForm({
-        date: '',
-        slot: '09:00',
+        date: query.get('date') ?? '',
+        slot: slots.some((entry) => entry.value === querySlot)
+            ? querySlot!
+            : '09:00',
         // Only asked for when the profile has no address yet.
         address: '',
         service_ids: [] as number[],

@@ -37,6 +37,8 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read User|null $rider
  * @property-read User|null $assigner
  */
+
+// type of this column
 #[Fillable([
     'order_id', 'type', 'status', 'rider_id', 'assigned_by', 'scheduled_at', 'address',
     'contact_phone', 'attempts', 'completed_at', 'failure_reason', 'reschedule_reason',

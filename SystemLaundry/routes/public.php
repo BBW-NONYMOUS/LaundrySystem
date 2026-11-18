@@ -33,6 +33,7 @@ Route::get('track/{code}', [TrackingController::class, 'show'])->middleware('thr
 
 // Guest pickup booking (signed-in customers are sent to the portal booking).
 Route::get('book', [BookingRequestController::class, 'create'])->name('public.book');
+Route::get('book/continue', [BookingRequestController::class, 'proceed'])->name('public.book.proceed');
 Route::post('book', [BookingRequestController::class, 'store'])->middleware('throttle:public-forms')->name('public.book.store');
 
 // "Rate us" link from the order-completed message.

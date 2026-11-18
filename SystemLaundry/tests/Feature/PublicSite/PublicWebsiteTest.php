@@ -206,6 +206,41 @@ class PublicWebsiteTest extends TestCase
         Customer::factory()->create(['user_id' => $customer->id]);
 
         $this->actingAs($customer)->get(route('public.book'))->assertRedirect(route('portal.bookings.create'));
+        $this->get(route('public.book.proceed', ['date' => '2026-12-01', 'slot' => '13:00']))
+            ->assertRedirect(route('portal.bookings.create', ['date' => '2026-12-01', 'slot' => '13:00']));
+    }
+
+    public function test_guests_pick_a_time_then_log_in_and_land_on_the_portal_booking_with_it(): void
+    {
+        $booking = route('portal.bookings.create', ['date' => '2026-12-01', 'slot' => '13:00']);
+
+        $this->get(route('public.book.proceed', ['date' => '2026-12-01', 'slot' => '13:00']))
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('url.intended', $booking);
+
+        $customer = $this->userWithRole(UserRole::Customer);
+        $this->post(route('login.store'), ['email' => $customer->email, 'password' => 'password'])
+            ->assertRedirect($booking);
+    }
+
+    public function test_guests_who_choose_create_an_account_land_on_the_portal_booking_after_registering(): void
+    {
+        $this->get(route('public.book.proceed', ['slot' => '16:00', 'to' => 'register']))
+            ->assertRedirect(route('register'));
+
+        $this->post(route('register.store'), [
+            'name' => 'Ana Reyes',
+            'email' => 'ana.reyes@gmail.com',
+            'phone' => '0918 123 4567',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertRedirect(route('portal.bookings.create', ['slot' => '16:00']));
+    }
+
+    public function test_booking_continue_ignores_made_up_times(): void
+    {
+        $this->get(route('public.book.proceed', ['slot' => '03:00']))->assertSessionHasErrors('slot');
+        $this->get(route('public.book.proceed', ['date' => 'tomorrow']))->assertSessionHasErrors('date');
     }
 
     public function test_booking_page_offers_two_weeks_of_dates_and_slot_availability(): void
@@ -217,7 +252,7 @@ class PublicWebsiteTest extends TestCase
             ->has('slots', 3)
             ->where('slots.0.value', PickupSlot::Morning->value)
             ->where('selectedDate', now()->toDateString())
-            ->has('formToken'));
+            ->missing('formToken'));
 
         // Another day's slots load with a partial reload (?date=).
         $tomorrow = now()->addDay()->toDateString();
