@@ -64,8 +64,6 @@ class UserController extends Controller
             'is_active' => true,
         ]);
 
-        // The owner vouches for staff emails, so skip the verification email.
-        $user->forceFill(['email_verified_at' => now()])->save();
         $user->syncRoles([$request->role()->value]);
 
         $this->toast("{$user->name} can now log in as {$request->role()->label()}.");

@@ -70,8 +70,6 @@ class UserSeeder extends Seeder
             ],
         );
 
-        // Seeded accounts are trusted, so skip the email verification step.
-        $user->forceFill(['email_verified_at' => $user->email_verified_at ?? now()])->save();
         $user->syncRoles([$data['role']->value]);
     }
 }

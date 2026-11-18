@@ -251,7 +251,7 @@ export default function BookPickup({
                             onChange={(value) => setData('website', value)}
                         />
 
-                        <Step number={1} title="When should we come?">
+                        <Step title="When should we come?">
                             <PublicField
                                 id="book-pickup_date"
                                 label="Pickup date"
@@ -348,7 +348,7 @@ export default function BookPickup({
                             )}
                         </Step>
 
-                        <Step number={2} title="Your details">
+                        <Step title="Your details">
                             <div className="grid gap-5 sm:grid-cols-2">
                                 <PublicField
                                     id="book-name"
@@ -376,7 +376,6 @@ export default function BookPickup({
                                 <PublicField
                                     id="book-phone"
                                     label="Mobile number"
-                                    description="We’ll text your confirmation here."
                                     error={errors.phone}
                                 >
                                     {(aria) => (
@@ -402,7 +401,6 @@ export default function BookPickup({
                                     id="book-email"
                                     label="Email"
                                     optional
-                                    description="For a copy of your confirmation."
                                     error={errors.email}
                                 >
                                     {(aria) => (
@@ -450,12 +448,12 @@ export default function BookPickup({
                             </div>
                         </Step>
 
-                        <Step number={3} title="Your laundry">
+                        <Step title="Your laundry">
                             <div className="grid gap-5 sm:grid-cols-2">
+                                {/* "Not sure yet" in the list covers guests who can't pick a service. */}
                                 <PublicField
                                     id="book-service_id"
                                     label="Service"
-                                    description="Not sure? Leave it — we’ll sort it at the shop."
                                     error={errors.service_id}
                                 >
                                     {(aria) => (
@@ -498,11 +496,6 @@ export default function BookPickup({
                                             : 'Number of pieces'
                                     }
                                     optional
-                                    description={
-                                        perKg
-                                            ? 'A full laundry bag is usually 5–7 kg.'
-                                            : undefined
-                                    }
                                     error={errors.estimated_quantity}
                                 >
                                     {(aria) => (
@@ -551,7 +544,7 @@ export default function BookPickup({
                                         setData('wants_delivery', checked)
                                     }
                                     label="Deliver it back to me"
-                                    description={`+${peso(pricing.delivery_fee_per_trip, symbol)} per trip. Untick to pick it up at the shop.`}
+                                    description={`+${peso(pricing.delivery_fee_per_trip, symbol)} per trip.`}
                                 />
                             </div>
 
@@ -675,29 +668,13 @@ export default function BookPickup({
     );
 }
 
-function Step({
-    number,
-    title,
-    children,
-}: {
-    number: number;
-    title: string;
-    children: ReactNode;
-}) {
+/** One card of the booking form. Titled only — the cards read top to bottom, so no step numbers. */
+function Step({ title, children }: { title: string; children: ReactNode }) {
     return (
         <Card className="rounded-2xl shadow-sm">
             <CardContent className="grid gap-5 pt-6">
-                <h2 className="flex items-center gap-3 text-xl font-semibold tracking-tight">
-                    <span
-                        aria-hidden
-                        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm text-primary-foreground"
-                    >
-                        {number}
-                    </span>
-                    <span>
-                        <span className="sr-only">Step {number}: </span>
-                        {title}
-                    </span>
+                <h2 className="text-xl font-semibold tracking-tight">
+                    {title}
                 </h2>
                 {children}
             </CardContent>

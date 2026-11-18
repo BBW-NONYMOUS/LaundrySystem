@@ -5,11 +5,13 @@ namespace Tests\Feature\Auth;
 use App\Models\Customer;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Tests\Concerns\SetsUpLaundry;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, SetsUpLaundry;
 
     public function test_registration_screen_can_be_rendered()
     {
@@ -34,6 +36,41 @@ class RegistrationTest extends TestCase
         $user = User::where('email', 'test@example.com')->sole();
         $this->assertTrue($user->hasRole('customer'));
         $this->assertSame('09171234567', $user->customer?->phone);
+    }
+
+    public function test_a_new_customer_goes_straight_in_without_an_email_code_or_link()
+    {
+        $this->setUpLaundry();
+        Notification::fake();
+
+        $this->post(route('register.store'), [
+            'name' => 'Maria Santos',
+            'email' => 'maria.santos@gmail.com',
+            'phone' => '0917 765 4321',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $this->get(route('dashboard'))->assertRedirect(route('portal.index'));
+        $this->get(route('portal.index'))->assertOk();
+        Notification::assertNothingSent();
+    }
+
+    public function test_an_email_that_already_has_an_account_is_told_to_log_in()
+    {
+        User::factory()->create(['email' => 'maria.santos@gmail.com']);
+
+        $this->post(route('register.store'), [
+            'name' => 'Maria Santos',
+            'email' => 'Maria.Santos@gmail.com',
+            'phone' => '0917 765 4321',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertSessionHasErrors([
+            'email' => 'This email already has an account. Log in instead, or reset your password if you forgot it.',
+        ]);
+
+        $this->assertGuest();
     }
 
     public function test_registering_with_a_walk_in_customers_phone_links_their_history()

@@ -691,19 +691,19 @@ One page, three numbered steps, with a sticky summary on desktop. On phones the 
  Book a pickup
  Tell us when and where. We'll confirm by SMS.
  ┌──────────────────────────────────────────────┬────────────────────────────┐
- │ ① When should we come?                       │ Your pickup                │
+ │ When should we come?                         │ Your pickup                │
  │ [Today] [Tue 24] [Wed 25] [Thu 26] [More 📅]  │ 📅 Thu, Oct 24             │
  │ ○ 9:00 – 11:00 AM          3 slots left      │ 🕐 1:00 – 3:00 PM          │
  │ ● 1:00 – 3:00 PM           2 slots left      │ 🫧 Wash, Dry & Fold ~6 kg  │
  │ ⊘ 4:00 – 6:00 PM           Fully booked      │ ⚡ Express                  │
  │                                              │ ────────────────────────── │
- │ ② Your details                               │ Estimated total     ₱415   │
+ │ Your details                                 │ Estimated total     ₱415   │
  │ Full name     [                ]             │ Final price after weighing │
  │ Mobile number [                ]             │                            │
  │ Email (opt.)  [                ]             │ ✓ Free SMS updates         │
  │ Pickup address [                         ]   │ ✓ Pay on delivery          │
  │                                              │                            │
- │ ③ Your laundry                               │                            │
+ │ Your laundry                                 │                            │
  │ Service       [Wash, Dry & Fold  ▾]          │                            │
  │ Est. weight   [ 6 ] kg                       │                            │
  │ [ ] Express (+50%)   [✓] Deliver it back     │                            │
@@ -719,7 +719,7 @@ One page, three numbered steps, with a sticky summary on desktop. On phones the 
 
 - **Date:** a scrollable row of day chips (ToggleGroup) for the next 7 days, plus **More dates**, which opens the existing Date Picker (Popover + Calendar) limited to the 14-day booking window.
 - **Slots:** a RadioGroup of three slot cards. Choosing another date reloads only the slots (Inertia partial reload). Full or too-late slots are disabled and say why. If every slot that day is gone, an Alert suggests the next day.
-- **Prefill:** `?service=` and `?qty=` from the Pricing estimator pre-fill step 3.
+- **Prefill:** `?service=` and `?qty=` from the Pricing estimator pre-fill the **Your laundry** card.
 - **Hidden fields:** the honeypot (`website`) and the form token (decision D5). Visitors never see them.
 - **Submit:** Inertia `useForm`. Errors appear under each field; the page scrolls to the first one.
 - **Success:** a Dialog with the reference number. The form resets.
@@ -728,7 +728,7 @@ One page, three numbered steps, with a sticky summary on desktop. On phones the 
 
 - H1: **Book a pickup**
 - Lead: "Tell us when and where. Our rider comes to your door, and we'll confirm by SMS."
-- Step titles: **When should we come?** · **Your details** · **Your laundry**
+- Card titles (no step numbers): **When should we come?** · **Your details** · **Your laundry**
 - Day chips: **Today**, **Tomorrow**, then short dates ("Thu 26"). Button: **More dates**
 - Slot labels: the window from the server ("1:00 – 3:00 PM"), plus "{n} slots left", "1 slot left", **Fully booked** or **Too late to book today**.
 - All-full alert: "All pickup times on {date} are taken. Try {next date}, or call us at {phone} — we'll try to fit you in."
@@ -736,13 +736,13 @@ One page, three numbered steps, with a sticky summary on desktop. On phones the 
 | Field                | Label                                                                                            | Placeholder / helper                                                 |
 | -------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
 | name                 | Full name                                                                                        | Juan Dela Cruz                                                       |
-| phone                | Mobile number                                                                                    | 0917 123 4567 · "We'll text your confirmation here."                 |
-| email                | Email (optional)                                                                                 | you@example.com · "For a copy of your confirmation."                 |
+| phone                | Mobile number                                                                                    | 0917 123 4567                                                        |
+| email                | Email (optional)                                                                                 | you@example.com                                                      |
 | address              | Pickup address                                                                                   | House no., street, barangay, landmark                                |
-| service_id           | Service                                                                                          | Select a service · "Not sure? Leave it — we'll sort it at the shop." |
-| estimated_quantity   | Estimated weight (kg) / Number of pieces                                                         | "A full laundry bag is usually 5–7 kg."                              |
+| service_id           | Service                                                                                          | Select a service (first option: "Not sure yet")                      |
+| estimated_quantity   | Estimated weight (kg) / Number of pieces                                                         | 6 / 2                                                                |
 | is_express           | Express (+{express_pct}%)                                                                        | "Ready in as little as {express_hours} hours."                       |
-| wants_delivery       | Deliver it back to me                                                                            | "+{delivery_fee} per trip. Untick to pick it up at the shop."        |
+| wants_delivery       | Deliver it back to me                                                                            | "+{delivery_fee} per trip."                                          |
 | special_instructions | Special instructions                                                                             | e.g. separate the whites, no fabric softener, call when outside      |
 | consent              | I agree that {shop_name} may use my details to arrange this pickup. Read our **Privacy Notice**. |                                                                      |
 

@@ -34,6 +34,20 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('dashboard'));
     }
 
+    public function test_an_email_that_was_never_verified_can_still_log_in_and_use_the_app()
+    {
+        $user = User::factory()->unverified()->create(['email' => 'juan.delacruz@gmail.com']);
+
+        $this->post(route('login.store'), [
+            'email' => 'juan.delacruz@gmail.com',
+            'password' => 'password',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+        $this->get(route('dashboard'))->assertOk();
+        $this->get(route('profile.edit'))->assertOk();
+    }
+
     public function test_passkey_login_response_redirects_to_the_dashboard(): void
     {
         $user = User::factory()->create();

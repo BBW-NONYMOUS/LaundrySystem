@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Enums\UserRole;
 use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -44,7 +43,7 @@ use Spatie\Permission\Traits\HasRoles;
  */
 #[Fillable(['name', 'email', 'phone', 'password', 'is_active', 'last_login_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
+class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, LogsActivity, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;

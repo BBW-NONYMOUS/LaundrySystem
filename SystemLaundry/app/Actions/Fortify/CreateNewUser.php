@@ -34,6 +34,8 @@ class CreateNewUser implements CreatesNewUsers
             ...$this->profileRules(),
             'phone' => ['required', 'string', new PhilippineMobile],
             'password' => $this->passwordRules(),
+        ], [
+            'email.unique' => 'This email already has an account. Log in instead, or reset your password if you forgot it.',
         ])->validate();
 
         $phone = (string) Customer::normalizePhone($input['phone']);
@@ -51,6 +53,8 @@ class CreateNewUser implements CreatesNewUsers
                 'email' => $input['email'],
                 'phone' => $phone,
                 'password' => $input['password'],
+                // Set here, not left to the DB default, so the "deactivated?" check sees it right after sign-up.
+                'is_active' => true,
             ]);
 
             $user->assignRole(Role::findOrCreate(UserRole::Customer->value, 'web'));

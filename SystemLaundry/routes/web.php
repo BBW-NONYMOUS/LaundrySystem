@@ -40,7 +40,7 @@ require __DIR__.'/public.php';
 
 $can = fn (P ...$permissions): string => PermissionMiddleware::using(array_map(fn (P $permission) => $permission->value, $permissions));
 
-Route::middleware(['auth', 'verified'])->group(function () use ($can) {
+Route::middleware(['auth'])->group(function () use ($can) {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
 
     Route::get('search', SearchController::class)

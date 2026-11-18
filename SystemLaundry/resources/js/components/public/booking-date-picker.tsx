@@ -62,7 +62,8 @@ export function BookingDatePicker({
 
     return (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <ScrollArea className="-mx-1 min-w-0 flex-1">
+            {/* inline-size containment: the w-max chip row scrolls here instead of widening the page on phones. */}
+            <ScrollArea className="-mx-1 min-w-0 flex-1 contain-[inline-size]">
                 <ToggleGroup
                     id={id}
                     type="single"
